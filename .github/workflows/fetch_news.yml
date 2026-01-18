@@ -17,7 +17,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y curl jq
       - name: Fetch news and update file
         run: |
-          API_KEY="b35f9afdc84845b782d4120453db88ea" # ★あなたのキーに置き換える
+          API_KEY="YOUR_NEWS_API_KEY" # ★あなたのキーに置き換える
           # APIを呼び出し、記事の内容だけを取得して news_data.txt に保存
           curl -s "https://newsapi.org" | jq -r '.articles[].content' > news_data.txt
       - name: Commit files
