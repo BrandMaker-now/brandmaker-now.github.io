@@ -1,36 +1,20 @@
-name: Update Daily News
-
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 21 * * *' # 日本時間 朝6時
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Fetch RSS and Extract Titles
         run: |
-          # Yahoo!ニュースの主要ニュースRSSフィードからタイトルを取得します
-          curl -s https://news.yahoo.co.jp/rss/topics/top-picks.xml \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 \
-          | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&apos;/\x27/g; s/&yen;/¥/g' \
-          > news_data.txt
-          
-          # ログ出力して確認
-          cat news_data.txt
+          # 主要
+          curl -s https://news.yahoo.co.jp | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news_top.txt
+          # 経済
+          curl -s https://news.yahoo.co.jp | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news_business.txt
+          # エンタメ
+          curl -s https://news.yahoo.co.jp | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news_ent.txt
+          # IT
+          curl -s https://news.yahoo.co.jp | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news_it.txt
 
       - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add news_data.txt
+          git add news_*.txt
           if ! git diff --staged --quiet; then
-            git commit -m "Update news $(date +'%Y-%m-%d')"
+            git commit -m "Update news across genres $(date +'%Y-%m-%d')"
             git push
           fi
