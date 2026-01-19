@@ -1,8 +1,10 @@
 name: Update Daily News
+
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 21 * * *'
+    - cron: '0 21 * * *' # 日本時間 朝6時
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,13 +12,25 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch
+
+      - name: Fetch RSS and Extract Titles
         run: |
-          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -o '<title>.*</title>' | sed -e 's/<title>//g' -e 's/<\/title>//g' | sed -e 's/（.*）//g' -e 's/(.*)//g' | tail -n +2 > news.txt
-      - name: Push
+          # Yahoo!ニュースから取得して news.txt という名前で保存
+          curl -s https://news.yahoo.co.jp \
+          | grep -oP '(?<=<title>).*?(?=</title>)' \
+          | tail -n +2 \
+          | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&apos;/\x27/g; s/&yen;/¥/g' \
+          > news.txt
+          
+          # ログ出力して確認
+          cat news.txt
+
+      - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.txt
-          git commit -m "Update news" || exit 0
-          git push
+          if ! git diff --staged --quiet; then
+            git commit -m "Update news $(date +'%Y-%m-%d')"
+            git push
+          fi
