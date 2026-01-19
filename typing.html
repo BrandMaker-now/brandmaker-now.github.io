@@ -15,32 +15,19 @@ jobs:
 
       - name: Fetch Multiple News
         run: |
-          fetch_news() {
-            # 1. RSS取得
-            # 2. タグの中身を抽出(sedを使用)
-            # 3. 1行目のサイト名を削除
-            # 4. 配信元カッコの削除
-            # 5. 上位10件を保存
-            curl -sL -A "Mozilla/5.0" "$1" | \
-            sed -n 's/.*<title>\(.*\)<\/title>.*/\1/p' | \
-            tail -n +2 | \
-            sed -e 's/（.*）//g' -e 's/(.*)//g' | \
-            head -n 10 > "$2"
-            echo "--- $2 updated ---"
-            cat "$2"
-          }
-
-          fetch_news "https://news.yahoo.co.jp" news_top.txt
-          fetch_news "https://news.yahoo.co.jp" news_business.txt
-          fetch_news "https://news.yahoo.co.jp" news_ent.txt
-          fetch_news "https://news.yahoo.co.jp" news_it.txt
+          # 主要
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 | head -n 10 > news_top.txt
+          # 経済
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 | head -n 10 > news_business.txt
+          # エンタメ
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 | head -n 10 > news_ent.txt
+          # IT
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 | head -n 10 > news_it.txt
 
       - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news_*.txt
-          if ! git diff --staged --quiet; then
-            git commit -m "Update daily news $(date +'%Y-%m-%d')"
-            git push
-          fi
+          git commit -m "Update news" || exit 0
+          git push
