@@ -34,10 +34,12 @@
     async function init() {
         try {
             const res = await fetch('./news_data.txt?t=' + Date.now());
-            if (!res.ok) throw new Error();
-            const text = await res.text();
             
-            // 各行の空白を削除し、空行を除外する処理を追加
+            // ↓ このアラート行を追加しました ↓
+            alert('ファイルの読み込みを試行しました。ステータスコード: ' + res.status);
+
+            if (!res.ok) throw new Error();
+            
             newsItems = text.trim().split('\n')
                 .map(item => item.trim()) 
                 .filter(item => item.length > 0); 
