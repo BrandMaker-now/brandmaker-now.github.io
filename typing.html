@@ -2,19 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Typing</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .container { background: white; padding: 40px; border-radius: 15px; text-align: center; width: 90%; max-width: 600px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #word { font-size: 24px; font-weight: bold; margin-bottom: 20px; min-height: 1.5em; color: #333; }
-        input { width: 100%; font-size: 20px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f7f6; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }
+        #word { font-size: 22px; font-weight: bold; margin-bottom: 20px; color: #333; min-height: 1.5em; }
+        input { width: 100%; font-size: 18px; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; margin-bottom: 20px; }
+        .back-link { color: #007bff; text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <div id="word">読み込み中...</div>
-    <input type="text" id="input-field" autocomplete="off" placeholder="ここにタイピング">
+    <div id="word">ニュースを取得中...</div>
+    <input type="text" id="input-field" autocomplete="off" placeholder="ここに正しく入力">
+    <div>
+        <a href="index.html" class="back-link">← 戻る</a>
+    </div>
 </div>
+
 <script>
     const wordDisplay = document.getElementById('word');
     const inputField = document.getElementById('input-field');
@@ -23,29 +30,29 @@
 
     async function init() {
         try {
+            // 現在時刻を付けてキャッシュを回避
             const res = await fetch('./news.txt?t=' + Date.now());
-            if (!res.ok) {
-                wordDisplay.textContent = "news.txtが見つかりません。Actionsを手動実行してください。";
-                return;
-            }
+            if (!res.ok) throw new Error();
             const text = await res.text();
             newsItems = text.trim().split('\n').filter(line => line.trim() !== "");
+            
             if (newsItems.length === 0) {
-                wordDisplay.textContent = "ニュースが空です。";
+                wordDisplay.textContent = "ニュースがありません。Actionsを実行してください。";
             } else {
-                showNext();
+                render();
             }
         } catch (e) {
-            wordDisplay.textContent = "読み込みエラー";
+            wordDisplay.textContent = "データの読み込みに失敗しました。";
         }
     }
 
-    function showNext() {
+    function render() {
         if (currentIndex < newsItems.length) {
             wordDisplay.textContent = newsItems[currentIndex];
             inputField.value = '';
+            inputField.focus();
         } else {
-            wordDisplay.textContent = "すべて終了！";
+            wordDisplay.textContent = "🎉 すべて完了！";
             inputField.disabled = true;
         }
     }
@@ -53,11 +60,12 @@
     inputField.addEventListener('input', () => {
         if (inputField.value === newsItems[currentIndex]) {
             currentIndex++;
-            showNext();
+            render();
         }
     });
 
     init();
 </script>
+
 </body>
 </html>
