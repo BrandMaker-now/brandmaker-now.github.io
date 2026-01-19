@@ -3,7 +3,6 @@ name: Update Daily News
 on:
   workflow_dispatch:
   schedule:
-    # 毎日日本時間の朝6時（UTC 21:00）に実行
     - cron: '0 21 * * *'
 
 jobs:
@@ -14,38 +13,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch RSS for multiple genres
+      - name: Fetch News
         run: |
-          fetch_titles() {
-            # 1. RSSを取得
-            # 2. <title>タグの中身を抽出
-            # 3. 1行目（サイト全体のタイトル）を削除
-            # 4. 全角・半角のカッコとその中身（配信元名）を削除
-            # 5. 上位10件を保存
-            curl -s "$1" \
-            | grep '<title>' \
-            | sed -e 's/<title>//g' -e 's/<\/title>//g' \
-            | sed '1d' \
-            | sed -e 's/（.*）//g' -e 's/(.*)//g' \
-            | head -n 10 > "$2"
-            
-            echo "--- Updated $2 ---"
+          fetch_news() {
+            # -L はリダイレクト許可、-A はブラウザのふりをする設定
+            # grepとsedでタイトルタグを抜き、カッコ内の配信元を消す
+            curl -sL -A "Mozilla/5.0" "$1" | grep -o '<title>.*</title>' | sed 's/<title>//g;s/<\/title>//g' | tail -n +2 | sed 's/（.*）//g;s/(.*)//g' > "$2"
+            echo "--- $2 content ---"
             cat "$2"
           }
-          
-          # YahooニュースのRSS URLを使用
-          fetch_titles "https://news.yahoo.co.jp" news_top.txt
-          fetch_titles "https://news.yahoo.co.jp" news_business.txt
-          fetch_titles "https://news.yahoo.co.jp" news_ent.txt
-          fetch_titles "https://news.yahoo.co.jp" news_it.txt
+
+          fetch_news "https://news.yahoo.co.jp" news_top.txt
+          fetch_news "https://news.yahoo.co.jp" news_business.txt
+          fetch_news "https://news.yahoo.co.jp" news_ent.txt
+          fetch_news "https://news.yahoo.co.jp" news_it.txt
 
       - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news_*.txt
-          # 変更がある場合のみコミット
           if ! git diff --staged --quiet; then
-            git commit -m "Update daily news titles $(date +'%Y-%m-%d')"
+            git commit -m "Update news $(date +'%Y-%m-%d')"
             git push
           fi
