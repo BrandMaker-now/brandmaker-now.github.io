@@ -16,20 +16,22 @@ jobs:
       - name: Fetch RSS and Extract Titles
         run: |
           # 1. RSSを取得
-          # 2. <title>の中身をすべて抜き出す
-          # 3. 最初の1行目（サイト名「Yahoo!ニュース・トピックス - 主要」）だけを削除
+          # 2. <title>タグの中身を抜き出し、<![CDATA[ ]]> などの余計な文字を削除
+          # 3. 最初の1行目（サイト名）を削除して保存
           curl -sL https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
+          | sed -n 's/.*<title>\(.*\)<\/title>.*/\1/p' \
+          | sed 's/<!\[CDATA\[//g; s/\]\]>//g' \
           | sed '1d' \
           > news.txt
           
-          # ログで確認（1行目が 首相 食料品... になっていればOK）
-          echo "--- 抽出結果の先頭3行 ---"
-          head -n 3 news.txt
+          # デバッグログ：中身を表示
+          echo "--- ニュース抽出結果 ---"
+          cat news.txt
           echo "------------------------"
 
+          # ファイルが空でないかチェック
           if [ ! -s news.txt ]; then
-            echo "Error: news.txt is empty"
+            echo "Error: news.txt is empty. Check RSS format."
             exit 1
           fi
 
