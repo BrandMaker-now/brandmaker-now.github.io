@@ -10,18 +10,9 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch News
+      - name: Fetch
         run: |
-          # RSSを取得し、1行ずつバラしてタイトルタグの中身だけを抜く
-          # カッコ（配信元）もここで消去します
-          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" \
-          | grep -o '<title>.*</title>' \
-          | sed -e 's/<title>//g' -e 's/<\/title>//g' \
-          | sed -e 's/（.*）//g' -e 's/(.*)//g' \
-          | tail -n +2 > news.txt
-          
-          # ログで中身を確認
-          cat news.txt
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -o '<title>.*</title>' | sed -e 's/<title>//g' -e 's/<\/title>//g' | sed -e 's/（.*）//g' -e 's/(.*)//g' | tail -n +2 > news.txt
       - name: Push
         run: |
           git config user.name "github-actions[bot]"
