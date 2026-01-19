@@ -3,7 +3,7 @@ name: Update Daily News
 on:
   workflow_dispatch: # 手動実行ボタン
   schedule:
-    - cron: '0 21 * * *' # 日本時間の毎朝6時に実行
+    - cron: '0 21 * * *' # 日本時間 朝6時
 
 jobs:
   build:
@@ -13,12 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch RSS and Extract Titles
+      - name: Fetch RSS
         run: |
-          # NHKの主要ニュースRSSからタイトルを抽出
+          # NHKニュースのRSSからタイトルを取得して整形
           curl -s https://www3.nhk.or.jp \
           | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +2 > news_data.txt
+          | tail -n +3 \
+          | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g' > news_data.txt
 
       - name: Commit and Push
         run: |
