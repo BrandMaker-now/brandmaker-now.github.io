@@ -13,27 +13,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch News
+      - name: Fetch and Combine News
         run: |
-          fetch_news() {
-            # -L はリダイレクト許可、-A はブラウザのふりをする設定
-            # grepとsedでタイトルタグを抜き、カッコ内の配信元を消す
-            curl -sL -A "Mozilla/5.0" "$1" | grep -o '<title>.*</title>' | sed 's/<title>//g;s/<\/title>//g' | tail -n +2 | sed 's/（.*）//g;s/(.*)//g' > "$2"
-            echo "--- $2 content ---"
-            cat "$2"
+          # 各ジャンルのURLからタイトルを取得して news.txt に追加していく
+          # ブラウザのふりをする -A オプションを追加して確実に取得します
+          fetch_and_append() {
+            curl -sL -A "Mozilla/5.0" "$1" | grep -o '<title>.*</title>' | sed 's/<title>//g;s/<\/title>//g' | tail -n +2 >> news.txt
           }
 
-          fetch_news "https://news.yahoo.co.jp" news_top.txt
-          fetch_news "https://news.yahoo.co.jp" news_business.txt
-          fetch_news "https://news.yahoo.co.jp" news_ent.txt
-          fetch_news "https://news.yahoo.co.jp" news_it.txt
+          # 実行前にファイルを空にする
+          > news.txt
+
+          # 主要、経済、ITのニュースを一つのファイルにまとめる
+          fetch_and_append "https://news.yahoo.co.jp"
+          fetch_and_append "https://news.yahoo.co.jp"
+          fetch_and_append "https://news.yahoo.co.jp"
+
+          # 重複を削除して整理
+          sort -u news.txt -o news.txt
+          
+          echo "--- news.txt content ---"
+          cat news.txt
 
       - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add news_*.txt
+          git add news.txt
           if ! git diff --staged --quiet; then
-            git commit -m "Update news $(date +'%Y-%m-%d')"
+            git commit -m "Update consolidated news $(date +'%Y-%m-%d')"
             git push
           fi
