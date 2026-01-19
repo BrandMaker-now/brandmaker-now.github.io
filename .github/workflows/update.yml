@@ -15,15 +15,21 @@ jobs:
 
       - name: Fetch RSS and Extract Titles
         run: |
-          # Yahoo!ニュースから取得して news.txt という名前で保存
+          # 1. RSSを取得
+          # 2. <item>タグの中にある<title>だけを抜き出すように変更 (より正確な抽出)
+          # 3. 余計な記号を置換して news.txt に保存
           curl -s https://news.yahoo.co.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
+          | grep -v "<channel>" \
+          | sed -n 's/.*<title>\(.*\)<\/title>.*/\1/p' \
           | tail -n +2 \
           | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&apos;/\x27/g; s/&yen;/¥/g' \
           > news.txt
           
-          # ログ出力して確認
-          cat news.txt
+          # デバッグ用：中身が空でないか確認
+          if [ ! -s news.txt ]; then
+            echo "Error: news.txt is empty"
+            exit 1
+          fi
 
       - name: Commit and Push
         run: |
