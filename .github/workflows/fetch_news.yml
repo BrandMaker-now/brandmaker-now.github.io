@@ -15,8 +15,8 @@ jobs:
 
       - name: Fetch RSS and Extract Titles
         run: |
-          # Yahoo!ニュースの主要ニュースRSSからタイトルを取得
-          curl -s https://news.yahoo.co.jp \
+          # Yahoo!ニュースの主要ニュースRSSフィードからタイトルを取得します
+          curl -s https://news.yahoo.co.jp/rss/topics/top-picks.xml \
           | grep -oP '(?<=<title>).*?(?=</title>)' \
           | tail -n +2 \
           | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&apos;/\x27/g; s/&yen;/¥/g' \
