@@ -10,14 +10,22 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch
+      - name: Fetch News
         run: |
-          # RSSからタイトルを抽出し、1行目のサイト名を除去してnews.txtに保存
-          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp/rss" | grep -oP '(?<=<title>).*?(?=</title>)' | tail -n +2 > news.txt
+          # RSSを取得し、1行ずつバラしてタイトルタグの中身だけを抜く
+          # カッコ（配信元）もここで消去します
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" \
+          | grep -o '<title>.*</title>' \
+          | sed -e 's/<title>//g' -e 's/<\/title>//g' \
+          | sed -e 's/（.*）//g' -e 's/(.*)//g' \
+          | tail -n +2 > news.txt
+          
+          # ログで中身を確認
+          cat news.txt
       - name: Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.txt
-          git commit -m "Update" || exit 0
+          git commit -m "Update news" || exit 0
           git push
