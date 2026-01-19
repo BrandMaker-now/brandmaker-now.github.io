@@ -1,9 +1,9 @@
 name: Update Daily News
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # 手動実行ボタン
   schedule:
-    - cron: '0 21 * * *' # 日本時間 朝6時
+    - cron: '0 21 * * *' # 日本時間の毎朝6時に実行
 
 jobs:
   build:
@@ -15,14 +15,11 @@ jobs:
 
       - name: Fetch RSS and Extract Titles
         run: |
-          # curlでXMLを取得し、grepとsedでタイトルを抽出、実体参照を変換
-          curl -s https://www3.nhk.or.jp \
-          | grep -oP '(?<=<title>).*?(?=</title>)' \
-          | tail -n +3 \
-          | sed 's/&quot;/"/g; s/&amp;/\&/g; s/&lt;/</g; s/&gt;/>/g; s/&apos;/\x27/g; s/&yen;/¥/g' \
-          > news_data.txt
+          # 【テスト中】ニュースの代わりに固定文字列を書き込みます
+          echo "これはテスト用のニュースタイトルです。" > news_data.txt
+          echo "テストが成功すればこれが表示されます。" >> news_data.txt
           
-          # ログ出力して確認
+          # ファイルの中身をログに出力して確認
           cat news_data.txt
 
       - name: Commit and Push
