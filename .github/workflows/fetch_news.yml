@@ -13,26 +13,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch and Combine News
+      - name: Fetch News Simple
         run: |
-          # 各ジャンルのURLからタイトルを取得して news.txt に追加していく
-          # ブラウザのふりをする -A オプションを追加して確実に取得します
-          fetch_and_append() {
-            curl -sL -A "Mozilla/5.0" "$1" | grep -o '<title>.*</title>' | sed 's/<title>//g;s/<\/title>//g' | tail -n +2 >> news.txt
-          }
+          # 出力ファイルを空にする
+          echo "" > news.txt
 
-          # 実行前にファイルを空にする
-          > news.txt
+          # 主要ニュースのみを取得して追加
+          curl -sL -A "Mozilla/5.0" "https://news.yahoo.co.jp" | grep -o '<title>.*</title>' | sed -e 's/<title>//g' -e 's/<\/title>//g' >> news.txt
 
-          # 主要、経済、ITのニュースを一つのファイルにまとめる
-          fetch_and_append "https://news.yahoo.co.jp"
-          fetch_and_append "https://news.yahoo.co.jp"
-          fetch_and_append "https://news.yahoo.co.jp"
-
-          # 重複を削除して整理
-          sort -u news.txt -o news.txt
+          # 1行目のサイト名を消して上位15件にする
+          sed -i '1d' news.txt
+          head -n 15 news.txt > temp.txt && mv temp.txt news.txt
           
-          echo "--- news.txt content ---"
+          echo "--- Result ---"
           cat news.txt
 
       - name: Commit and Push
@@ -40,7 +33,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.txt
-          if ! git diff --staged --quiet; then
-            git commit -m "Update consolidated news $(date +'%Y-%m-%d')"
-            git push
-          fi
+          git commit -m "Update news" || exit 0
+          git push
