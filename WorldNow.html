@@ -3,4 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>World Now</title>
+    <title>WorldNow</title>
+    <style>
+        /* 背景は機内の壁のような質感 */
+        body {
+            background-color: #f0f2f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 飛行機の窓の枠 */
+        .window-frame {
+            position: relative;
+            width: 320px;
+            height: 480px;
+            background-color: #000;
+            border: 18px solid #dcdcdc; /* 窓枠 */
+            border-radius: 120px; /* 飛行機らしい強い丸み */
+            box-shadow: 
+                0 20px 50px rgba(0,0,0,0.3), /* 外側の影 */
+                inset 0 0 20px rgba(0,0,0,0.8); /* 内側の立体感 */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 映像エリア */
+        #player {
+            width: 150%; /* 少し拡大して余白を消す */
+            height: 150%;
+            pointer-events: none; /* YouTubeの操作ボタンを触らせない */
+        }
+
+        /* フェード用のオーバーレイ */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            opacity: 1;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* テロップ（場所・時間） */
+        .info-panel {
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 20;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* 1分タイマーバー */
+        .timer-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            z-index: 20;
+        }
+        #timer-bar {
+            width: 0%;
+            height: 100%;
+            background: #fff;
+            transition: width 1s linear;
+        }
+
+        /* 音の選択画面 */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .btn {
+            background: white;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h2>窓の外の世界を覗きますか？</h2>
+        <button class="btn" onclick="startApp(true)">音ありで旅をする</button>
+        <button class="btn" onclick="startApp(false)">静かに旅をする</button>
+    </div>
+
+    <div class="window-frame">
+        <div id="overlay"></div>
+        <div class="info-panel">
+            <div id="location-name">LOADING...</div>
+            <div id="local-time"></div>
+        </div>
+        <div id="player"></div>
+        <div class="timer-bar-container">
+            <div id="timer-bar"></div>
+        </div>
+    </div>
+
+    <!-- YouTube API -->
+    <script src="https://www.youtube.com"></script>
+
+    <script>
+        let player;
+        let isMuted = true;
+        const videoList = [
+            { id: 'rnXIjl_Rzy4', name: 'Shibuya, Tokyo' },
+            { id: 'xXZqU5vnEug', name: 'Namibia, Africa' },
+            { id: 'Sv9hcJ3k5h4', name: 'Pattaya, Thailand' },
+            { id: 'OuCbntsMsWY', name: 'Times Square, NY' },
+            { id: 'Yzl9offu5g8', name: 'ISS Space Station' },
+            { id: 'zNahac5x0Tw', name: 'Miami Beach, USA' }
+        ];
+        let currentIndex = -1;
+
+        function startApp(sound) {
+            isMuted = !sound;
+            document.getElementById('start-screen').style.display = 'none';
+            loadNextVideo();
+        }
+
+        function onYouTubeIframeAPIReady() {
+            // APIの準備ができたら初期化
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'iv_load_policy': 3
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            // 初期準備完了
+        }
+
+        function loadNextVideo() {
+            // ランダムに動画を選択（前回と同じにならないように）
+            let nextIndex;
+            do {
+                nextIndex = Math.floor(Math.random() * videoList.length);
+            } while (nextIndex === currentIndex);
+            
+            currentIndex = nextIndex;
+            const video = videoList[currentIndex];
+
+            // フェードアウト
+            const overlay = document.getElementById('overlay');
+            overlay.style.opacity = 1;
+
+            setTimeout(() => {
+                player.loadVideoById(video.id);
+                if (isMuted) {
+                    player.mute();
+                } else {
+                    player.unMute();
+                }
+                document.getElementById('location-name').innerText = video.name;
+                updateTime();
+                
+                // フェードイン
+                setTimeout(() => {
+                    overlay.style.opacity = 0;
+                    startTimer();
+                }, 2000);
+            }, 1500);
+        }
+
+        let timerInterval;
+        function startTimer() {
+            let timeLeft = 60;
+            const bar = document.getElementById('timer-bar');
+            bar.style.width = '0%';
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                bar.style.width = ((60 - timeLeft) / 60 * 100) + '%';
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    loadNextVideo();
+                }
+            }, 1000);
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('local-time').innerText = now.toLocaleTimeString();
+        }
+
+        function onPlayerStateChange(event) {
+            // 動画が終了してしまった場合も次へ
+            if (event.data == YT.PlayerState.ENDED) {
+                loadNextVideo();
+            }
+        }
+    </script>
+</body>
+</html>
