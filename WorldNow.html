@@ -2,11 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>World Tour Webcam</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
@@ -15,9 +15,8 @@
         .btn-container { display: flex; gap: 20px; }
         .start-btn {
             padding: 15px 30px; font-size: 18px; border: 2px solid white;
-            background: none; color: white; cursor: pointer; opacity: 0.5; pointer-events: none; /* 最初は押せなくする */
+            background: none; color: white; cursor: pointer; opacity: 0.5; pointer-events: none;
         }
-        /* API準備完了後に適用するクラス */
         .ready { opacity: 1 !important; pointer-events: auto !important; }
     </style>
 </head>
@@ -33,15 +32,19 @@
 
     <div id="player"></div>
 
-<script src="https://www.youtube.com"></script>
 <script>
+    // 1. YouTube Iframe APIを非同期で読み込む（CORB対策）
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'v6Nf0Wf8S_0', '5_XidpxV960']; 
     let currentIndex = 0;
     let player;
     let isMuted = true;
-    let isPlayerReady = false; // 準備完了フラグ
+    let isPlayerReady = false;
 
-    // APIの準備ができたら呼ばれる
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%',
@@ -50,54 +53,54 @@
             playerVars: { 
                 'autoplay': 0,
                 'controls': 0, 
-                'playsinline': 1
+                'rel': 0,
+                'showinfo': 0,
+                'modestbranding': 1,
+                'playsinline': 1,
+                'enablejsapi': 1,
+                'origin': location.protocol + '//' + location.hostname // ★オリジンを明示
             },
             events: {
-                'onReady': onPlayerReady // プレイヤーの準備ができたら実行
+                'onReady': onPlayerReady,
+                'onError': (e) => console.log('Player Error:', e)
             }
         });
     }
 
-    function onPlayerReady(event) {
+    function onPlayerReady() {
         isPlayerReady = true;
         document.getElementById('msg').innerText = "World Tour";
-        // ボタンを押せるようにする
-        document.getElementById('btn-audio').classList.add('ready');
-        document.getElementById('btn-mute').classList.add('ready');
+        document.querySelectorAll('.start-btn').forEach(b => b.classList.add('ready'));
     }
 
     function startTour(soundOn) {
-        // 安全策：もし何らかの理由でplayerが未定義なら処理を中断
-        if (!player || !isPlayerReady) return;
-
+        if (!isPlayerReady) return;
         isMuted = !soundOn;
         document.getElementById('overlay').style.display = 'none';
         
         applyAudioSettings();
         player.playVideo();
-
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
-        if (!player || !isPlayerReady) return;
-
+        if (!player || typeof player.loadVideoById !== 'function') return;
         currentIndex = (currentIndex + 1) % videoList.length;
+        
+        // 動画の切り替え
         player.loadVideoById(videoList[currentIndex]);
         
-        // 動画の読み込み開始直後に設定を再適用
-        // 読み込み完了イベントを待たなくてもAPIが命令をキューに入れてくれます
-        applyAudioSettings();
+        // 切り替え完了後に音量を再適用する（イベントリスナー的な処理）
+        setTimeout(applyAudioSettings, 1500);
     }
 
     function applyAudioSettings() {
-        // playerが定義されているか、関数が存在するかを二重チェック
         if (player && typeof player.mute === 'function') {
             if (isMuted) {
                 player.mute();
             } else {
                 player.unMute();
-                player.setVolume(50);
+                player.setVolume(40);
             }
         }
     }
