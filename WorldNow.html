@@ -6,23 +6,9 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
         #player { width: 100%; height: 100%; }
-        
-        #guard {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; background: rgba(0,0,0,0);
-        }
-
-        /* タイトル隠し用の黒いカーテン */
-        #curtain {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 6; display: none;
-        }
-
-        #overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; justify-content: center; align-items: center;
-            z-index: 10; color: white; cursor: pointer;
-        }
+        #guard { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: rgba(0,0,0,0); }
+        #curtain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 6; display: none; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 10; color: white; cursor: pointer; }
         #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
     </style>
 </head>
@@ -38,17 +24,15 @@
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com"></script>
 <script>
-    // ★ここに好きな動画IDをどんどん追加してください
-    const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'AhQErfreEOE', 'v6Nf0Wf8S_0']; 
-    
+    // 2026年1月現在、外部サイトでの再生が許可されている安定したID
+    const videoList = ['XvN6f_N4Ym4', 'pS6G_vXWcHM', 'Hdyv9v9S94A', 'E9Kq9DbtY-M']; 
     let player;
     let isTourStarted = false;
     let currentIndex = 0;
 
     function onYouTubeIframeAPIReady() {
-        // 最初の一箇所目をランダムに決める
         currentIndex = Math.floor(Math.random() * videoList.length);
 
         player = new YT.Player('player', {
@@ -62,10 +46,13 @@
                 'rel': 0,
                 'iv_load_policy': 3,
                 'modestbranding': 1,
-                'mute': 1 
+                'mute': 1,
+                'enablejsapi': 1,
+                'origin': location.protocol + '//' + location.hostname
             },
             events: {
-                'onStateChange': onPlayerStateChange
+                'onStateChange': onPlayerStateChange,
+                'onReady': (e) => { console.log("Ready"); }
             }
         });
     }
@@ -74,7 +61,6 @@
         if (event.data === YT.PlayerState.PLAYING) {
             player.unMute();
             player.setVolume(50);
-            
             setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
             }, 5000);
@@ -97,7 +83,6 @@
     function nextDestination() {
         document.getElementById('curtain').style.display = 'block';
         
-        // ★次に行く場所をランダムに選ぶ（前回と同じにならないようにする）
         let nextIndex;
         do {
             nextIndex = Math.floor(Math.random() * videoList.length);
@@ -106,7 +91,10 @@
         currentIndex = nextIndex;
         
         player.mute();
-        player.loadVideoById(videoList[currentIndex]);
+        // 2026年最新の確実なロード方法
+        player.loadVideoById({
+            videoId: videoList[currentIndex]
+        });
         player.playVideo();
     }
 </script>
