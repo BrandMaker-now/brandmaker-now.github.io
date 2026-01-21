@@ -3,7 +3,7 @@
 
       - name: Fetch RSS and Extract Data
         run: |
-          curl -sL "https://news.yahoo.co.jp" > raw_rss.xml
+          curl -sL "https://news.yahoo.co.jp/rss/topics/top-picks.xml" > raw_rss.xml
           grep -E "<title>|<link>" raw_rss.xml | \
           sed -e 's/<[^>]*>//g' | \
           sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | \
