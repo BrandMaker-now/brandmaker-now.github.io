@@ -38,12 +38,13 @@
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com"></script>
 <script>
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'h_m-m4vW9Xk', 'v6Nf0Wf8S_0']; 
     let currentIndex = 0;
     let player;
     let isTourStarted = false;
+    let isPlayerReady = false; // ★追加：プレーヤー準備完了フラグ
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
@@ -51,44 +52,45 @@
             width: '100%',
             videoId: videoList[currentIndex],
             playerVars: { 
-                'autoplay': 0,
-                'controls': 0,
-                'disablekb': 1,
-                'rel': 0,
-                'iv_load_policy': 3,
-                'modestbranding': 1,
-                'mute': 1 // 最初はミュートで読み込む（再生エラー防止）
+                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 
+                'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 
             },
             events: {
+                'onReady': () => { // ★追加：準備完了を検知
+                    isPlayerReady = true;
+                },
                 'onStateChange': onPlayerStateChange
             }
         });
     }
 
     function onPlayerStateChange(event) {
-        // 再生が始まったら音を出して、カーテンを開ける準備をする
         if (event.data === YT.PlayerState.PLAYING) {
             player.unMute();
             player.setVolume(50);
             
-            // 5秒後にカーテンを消す（タイトルが消えるのを待つ）
             setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
             }, 5000);
         }
 
-        // 強制停止防止
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
         }
     }
 
     function startTour() {
+        // ★修正：isPlayerReadyがtrue（準備完了）でないと実行しない
+        if (!isPlayerReady) {
+            alert("まだ動画の準備中です。数秒お待ちください。");
+            return; 
+        }
+
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'block';
         
-        player.playVideo(); // 再生開始（onStateChangeでアンミュートされる）
+        player.playVideo(); 
         setInterval(nextDestination, 60000); 
     }
 
@@ -97,7 +99,6 @@
         
         currentIndex = (currentIndex + 1) % videoList.length;
         
-        // 再生を確実にするため、一旦ミュートでロードする
         player.mute();
         player.loadVideoById(videoList[currentIndex]);
         player.playVideo();
