@@ -1,19 +1,48 @@
-<div id="video-container" style="position:relative; width:560px; height:315px;">
-  <iframe id="myVideo" width="560" height="315" 
-    src="https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod" 
-    frameborder="0" style="pointer-events: none;"></iframe>
+<!-- 動画を表示するエリア -->
+<div id="player-wrapper" style="position:relative; width:560px; height:315px; background:#000;">
+  <div id="player"></div>
   
-  <!-- 画面全体を覆う透明な板（これをクリックすると再生開始） -->
-  <div id="overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer; background:rgba(0,0,0,0.01);"></div>
+  <!-- 再生前に表示されるボタン（デザインは自由に変えられます） -->
+  <div id="play-button-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.5); cursor:pointer; z-index:10;">
+    <button style="padding:15px 30px; font-size:18px; cursor:pointer; background:#ff0000; color:#fff; border:none; border-radius:5px;">
+      動画を再生する（音あり）
+    </button>
+  </div>
 </div>
 
 <script>
-  const overlay = document.getElementById('overlay');
-  const iframe = document.getElementById('myVideo');
+  // YouTube IFrame Player API の読み込み
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/embed/OuCbntsMsWY?si=07McOiyJUwJfMQod";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-  overlay.addEventListener('click', () => {
-    // YouTubeのAPIに再生を命令する
-    iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-    overlay.style.display = 'none'; // クリック後は透明な板を消す
+  var player;
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+      height: '315',
+      width: '560',
+      videoId: 'OuCbntsMsWY',
+      playerVars: {
+        'playsinline': 1,
+        'controls': 0,    // 停止できないようにコントロールを隠す
+        'rel': 0,
+        'showinfo': 0
+      }
+    });
+  }
+
+  // ボタンをクリックした時の動作
+  document.getElementById('play-button-overlay').addEventListener('click', function() {
+    if (player && player.playVideo) {
+      player.unMute();     // ミュート解除
+      player.playVideo();  // 再生開始
+      this.style.display = 'none'; // ボタンを消す
+    }
   });
 </script>
+
+<style>
+  /* 停止されないようにクリックを無効化 */
+  #player { pointer-events: none; }
+</style>
