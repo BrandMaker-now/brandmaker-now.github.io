@@ -30,56 +30,78 @@
             background: #000; display: flex; justify-content: center; align-items: center;
             z-index: 10; color: white;
         }
-        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
+        
+        /* 準備ができるまでボタンを無効化 */
+        #start-btn { 
+            padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white;
+            cursor: wait; opacity: 0.5;
+        }
+        #start-btn.ready {
+            cursor: pointer; opacity: 1;
+        }
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <button id="start-btn">世界へ旅に出る（音あり）</button>
+        <button id="start-btn" disabled>通信中...</button>
     </div>
 
     <div id="player-container">
         <div id="curtain">
             <div class="loader"></div>
-            <div id="loading-text" style="font-size: 24px; letter-spacing: 2px;">読み込み中...</div>
+            <div style="font-size: 24px; letter-spacing: 2px;">次の国へ移動中...</div>
         </div>
         <div id="guard"></div>
         <div id="player"></div>
     </div>
 
+<!-- 正しいAPIリンクを使用 -->
 <script src="https://www.youtube.com"></script>
 <script>
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'h_m-m4vW9Xk', 'v6Nf0Wf8S_0']; 
     let currentIndex = 0;
     let player;
     let isTourStarted = false;
-    let isTransitioning = false; // 切り替え中フラグ
+    let isTransitioning = false;
 
+    // APIの準備完了時に実行
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: videoList[currentIndex],
-            playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 },
-            events: { 'onStateChange': onPlayerStateChange }
+            playerVars: { 
+                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 
+                'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
         });
+    }
+
+    // プレーヤーの準備ができたらボタンを有効にする
+    function onPlayerReady() {
+        const btn = document.getElementById('start-btn');
+        btn.innerText = "世界へ旅に出る（音あり）";
+        btn.disabled = false;
+        btn.classList.add('ready');
     }
 
     function onPlayerStateChange(event) {
         if (!isTourStarted) return;
 
-        // 再生が始まったらチェック
         if (event.data === YT.PlayerState.PLAYING) {
-            // 広告中かどうか判定（APIの動画URLやadStateを利用）
+            // 広告判定（広告なら即座に次へ）
             const isAd = player.getAdState && player.getAdState() === 1;
             
             if (isAd) {
-                // 広告なら即、次の動画へ（画面は黒いまま）
                 nextDestination();
             } else {
-                // 本編（ライブ映像）なら、5秒待ってからカーテンを開ける
                 isTransitioning = false;
                 player.unMute();
                 player.setVolume(50);
+                // 本編再生から5秒後にカーテンを開ける
                 setTimeout(() => {
                     if (!isTransitioning) {
                         document.getElementById('curtain').style.display = 'none';
@@ -90,14 +112,20 @@
     }
 
     function startTour() {
+        // 安全策：プレーヤーが未定義なら何もしない
+        if (!player || typeof player.playVideo !== 'function') return;
+
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'flex';
+        
         player.playVideo();
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
+        if (!player || typeof player.loadVideoById !== 'function') return;
+
         isTransitioning = true;
         document.getElementById('curtain').style.display = 'flex';
         
