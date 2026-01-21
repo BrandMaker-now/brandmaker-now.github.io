@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <title>World Tour Live</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
@@ -15,7 +16,7 @@
 <body>
 
     <div id="overlay" onclick="startTour()">
-        <button id="start-btn">世界へ旅に出る（ランダム）</button>
+        <button id="start-btn">世界へ旅に出る（読み込み中...）</button>
     </div>
 
     <div id="player-container">
@@ -26,25 +27,21 @@
 
 <script src="https://www.youtube.com"></script>
 <script>
-    // ★ ここに行きたい動画IDをどんどん並べるだけ！（順不同でOK）
+    // ★2026年現在、比較的安定している24時間ライブ配信ID（これらも変わることがあります）
     const videoList = [
-        'DhB2NS6i4uA', // ニューヨーク タイムズスクエア
-        'OuCbntsMsWY', // 東京 渋谷
-        'h_m-m4vW9Xk', // ヴェネツィア
-        'v6Nf0Wf8S_0', // ロンドン
-        'mHeK096Y2_0', // 富士山
-        '1-iS7Lyb17A', // タイ バンコク
-        'S_dfq9rxyL8', // イスラエル エルサレム
-        '6Is9MAsE_E8', // ノルウェー オーロラ観測
-        'l_98VvHmsI8'  // アフリカ 水飲み場の動物たち
+        'pS6G_vXWcHM', // ニューヨーク タイムズスクエア
+        'XvN6f_N4Ym4', // 東京 渋谷スクランブル交差点
+        'Hdyv9v9S94A', // タイ バンコク
+        'V77mID_3f0M', // 富士山
+        'E9Kq9DbtY-M'  // ロンドン
     ]; 
 
     let player;
     let isTourStarted = false;
+    let isPlayerReady = false; // 準備完了フラグ
     let lastIndex = -1;
 
     function onYouTubeIframeAPIReady() {
-        // 最初の一箇所目もランダムに選ぶ
         const firstIndex = Math.floor(Math.random() * videoList.length);
         lastIndex = firstIndex;
 
@@ -55,14 +52,20 @@
             playerVars: { 
                 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1
             },
-            events: { 'onStateChange': onPlayerStateChange }
+            events: { 
+                'onReady': () => {
+                    isPlayerReady = true;
+                    document.getElementById('start-btn').innerText = "世界へ旅に出る（準備完了）";
+                },
+                'onStateChange': onPlayerStateChange 
+            }
         });
     }
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
             player.unMute();
-            player.setVolume(50);
+            player.setVolume(40);
             setTimeout(() => { document.getElementById('curtain').style.display = 'none'; }, 5000);
         }
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
@@ -71,6 +74,8 @@
     }
 
     function startTour() {
+        if (!isPlayerReady) return; // 準備ができるまで反応させない
+
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'block';
@@ -81,17 +86,14 @@
     function nextDestination() {
         document.getElementById('curtain').style.display = 'block';
         
-        // ★ ランダムに次のIDを選ぶ（前回と同じにならないようにする）
         let nextIndex;
         do {
             nextIndex = Math.floor(Math.random() * videoList.length);
-        } while (nextIndex === lastIndex && videoList.length > 1);
+        } while (nextIndex === lastIndex);
         
         lastIndex = nextIndex;
-        
         player.mute();
         player.loadVideoById(videoList[nextIndex]);
-        player.playVideo();
     }
 </script>
 </body>
