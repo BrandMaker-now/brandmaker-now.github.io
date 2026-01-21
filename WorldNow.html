@@ -2,47 +2,145 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>動作確認用 窓の旅</title>
+    <title>世界一周 窓の旅</title>
     <style>
-        body { background: #e6e9ed; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        body { background: #e6e9ed; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Helvetica Neue', sans-serif; }
         .window {
             position: relative; width: 400px; height: 600px; background: #000;
             border: 25px solid #fdfdfd; border-radius: 150px; overflow: hidden;
             box-shadow: 0 30px 60px rgba(0,0,0,0.4), inset 0 0 30px rgba(0,0,0,1); z-index: 1;
         }
-        .video-container { position: absolute; top: 0; left: -25%; width: 150%; height: 100%; }
-        embed { width: 100%; height: 100%; pointer-events: none; }
+        /* API用のコンテナ */
+        #player-container { position: absolute; top: 0; left: -25%; width: 150%; height: 100%; }
+        #player { width: 100%; height: 100%; }
+
+        .info { position: absolute; top: 50px; width: 100%; text-align: center; color: white; z-index: 10; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        #loc { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+        #time { font-size: 14px; opacity: 0.8; }
+        .timer-bar { position: absolute; bottom: 0; left: 0; height: 5px; background: rgba(255,255,255,0.5); width: 0%; z-index: 20; }
+
         #start-screen { position: fixed; inset: 0; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
-        button { padding: 18px 50px; border-radius: 40px; border: none; font-size: 20px; cursor: pointer; font-weight: bold; background: white; color: black; }
+        button { padding: 18px 50px; border-radius: 40px; border: none; font-size: 20px; cursor: pointer; font-weight: bold; }
+        #status-msg { margin-top: 20px; font-size: 14px; color: #aaa; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h2>動作確認 WORLD WINDOW</h2>
-        <button onclick="startApp()">搭乗する</button>
+        <h2>WORLD WINDOW</h2>
+        <p>ブラウザの制限により、開始操作が必要です。</p>
+        <button onclick="startApp(true)">音ありで搭乗</button>
+        <button onclick="startApp(false)">静かに搭乗</button>
+        <div id="status-msg">システムを読み込み中...</div>
     </div>
 
     <div class="window">
-        <div class="video-container" id="player-box"></div>
+        <div class="info">
+            <div id="loc">LOADING...</div>
+            <div id="time"></div>
+        </div>
+        <div id="player-container"><div id="player"></div></div>
+        <div class="timer-bar" id="bar"></div>
     </div>
 
+    <script src="https://www.youtube.com"></script>
+
     <script>
-        function startApp() {
-            document.getElementById('start-screen').style.display = 'none';
-            playTestVideo();
+        const videos = [
+            { id: 'rnXIjl_Rzy4', name: 'Shibuya, Tokyo' },
+            { id: 'xXZqU5vnEug', name: 'Namibia, Africa' },
+            { id: 'Sv9hcJ3k5h4', name: 'Pattaya, Thailand' },
+            { id: 'OuCbntsMsWY', name: 'Times Square, NY' },
+            { id: 'Yzl9offu5g8', name: 'ISS Space Station' },
+            { id: 'zNahac5x0Tw', name: 'Miami Beach, USA' }
+        ];
+
+        let player;
+        let isMuted = true;
+        let currentIndex = 0;
+        let timer;
+        let timerBarInterval;
+
+        function onYouTubeIframeAPIReady() {
+             document.getElementById('status-msg').innerText = "YouTubeシステム準備完了。";
         }
 
-        function playTestVideo() {
-            const testVideoId = '9bZkp7q19f0'; // 標準的なYouTube動画ID
-            const playerBox = document.getElementById('player-box');
-            playerBox.innerHTML = `
-                <embed
-                    src="https://www.youtube.com{testVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3"
-                    type="video/mp4"
-                    allowscriptaccess="always">
-                `;
+        function startApp(sound) {
+            isMuted = !sound;
+            document.getElementById('start-screen').style.display = 'none';
+            
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: videos[0].id,
+                playerVars: { 
+                    'autoplay': 1, 
+                    'controls': 0, 
+                    'rel': 0, 
+                    'modestbranding': 1,
+                    'iv_load_policy': 3,
+                    'mute': isMuted ? 1 : 0 // ここで確実にミュート設定
+                },
+                events: {
+                    'onReady': () => {
+                        // プレイヤーが準備できたら再生開始
+                        playVideo();
+                    },
+                    'onStateChange': (event) => {
+                        // 動画が終了した時の処理
+                        if (event.data === YT.PlayerState.ENDED) {
+                            nextVideo();
+                        }
+                    }
+                }
+            });
         }
+
+        function playVideo() {
+            const v = videos[currentIndex];
+            document.getElementById('loc').innerText = v.name;
+            
+            // プログレスバーのリセット
+            const bar = document.getElementById('bar');
+            bar.style.width = '0%';
+            
+            // 1分後に次の動画へ
+            clearTimeout(timer);
+            timer = setTimeout(nextVideo, 60000);
+            startTimerBar();
+        }
+
+        function nextVideo() {
+            clearInterval(timerBarInterval);
+            currentIndex = (currentIndex + 1) % videos.length;
+            const v = videos[currentIndex];
+            
+            player.loadVideoById(v.id);
+            document.getElementById('loc').innerText = v.name;
+            
+            clearTimeout(timer);
+            timer = setTimeout(nextVideo, 60000);
+            startTimerBar();
+        }
+
+        function startTimerBar() {
+            clearInterval(timerBarInterval);
+            const bar = document.getElementById('bar');
+            bar.style.width = '0%';
+            bar.style.transition = 'none'; // アニメーションを一時停止
+            
+            setTimeout(() => {
+                bar.style.transition = 'width 60s linear'; // 60秒かけてアニメーション
+                bar.style.width = '100%';
+            }, 50);
+        }
+
+
+        // 時刻表示を更新
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('time').innerText = now.toLocaleTimeString();
+        }, 1000);
     </script>
 </body>
 </html>
