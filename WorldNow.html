@@ -35,7 +35,7 @@
         #progress-bar {
             height: 100%; width: 100%; background: #ffffff;
             transition: transform linear;
-            transform-origin: right;
+            transform-origin: right; /* 左から右へ消える */
         }
 
         .loader {
@@ -75,7 +75,6 @@
             <div style="font-size: 24px; letter-spacing: 2px;">読み込み中...</div>
         </div>
         <div id="guard"></div>
-        <!-- 属性によるPiP禁止 -->
         <div id="player" disablePictureInPicture></div>
     </div>
 
@@ -100,6 +99,7 @@
     let isTourStarted = false;
     let isButtonEnabled = false;
     let nextDestinationTimer = null;
+    let curtainTimeout = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         const startBtn = document.getElementById('start-btn');
@@ -109,10 +109,9 @@
             startBtn.addEventListener('click', startTour);
         }, 3000);
 
-        // ★PiP検知と強制解除
         document.addEventListener('enterpictureinpicture', (event) => {
             if (document.pictureInPictureElement) {
-                document.exitPictureInPicture().catch(e => console.error(e));
+                document.exitPictureInPicture().catch(() => {});
             }
         }, true);
     });
@@ -141,7 +140,10 @@
             player.setVolume(50);
             updateInfoText();
 
-            setTimeout(() => {
+            // 前回のタイムアウトがあればクリア
+            if (curtainTimeout) clearTimeout(curtainTimeout);
+            
+            curtainTimeout = setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
                 document.getElementById('info-display').style.display = 'block';
                 document.getElementById('progress-container').style.display = 'block';
@@ -164,6 +166,8 @@
 
     function nextDestination() {
         clearTimeout(nextDestinationTimer);
+        if (curtainTimeout) clearTimeout(curtainTimeout);
+        
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
         document.getElementById('progress-container').style.display = 'none';
@@ -184,13 +188,17 @@
 
     function startBar() {
         const bar = document.getElementById('progress-bar');
+        // 一旦リセットを強調
         bar.style.transition = 'none';
         bar.style.transform = 'scaleX(1)';
         
-        setTimeout(() => {
-            bar.style.transition = 'transform 60s linear';
-            bar.style.transform = 'scaleX(0)';
-        }, 50);
+        // 再描画を促すために微小な遅延を挟んで実行
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                bar.style.transition = 'transform 60s linear';
+                bar.style.transform = 'scaleX(0)';
+            });
+        });
 
         nextDestinationTimer = setTimeout(nextDestination, 60000);
     }
