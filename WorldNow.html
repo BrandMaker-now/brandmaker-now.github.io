@@ -5,51 +5,41 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
-        #player { width: 100%; height: 100%; pointer-events: none; } /* 直接のクリックを無効化 */
+        #player { width: 100%; height: 100%; }
         
+        /* 透明なガードレイヤー：クリックやタップをすべて無効化する */
         #guard {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; background: rgba(0,0,0,0);
+            z-index: 5; background: rgba(0,0,0,0); /* 完全透明 */
         }
 
-        #black-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 6;
-            display: flex; justify-content: center; align-items: center;
-            color: #333;
-        }
-
+        /* スタート画面 */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; justify-content: center; align-items: center;
-            z-index: 10;
+            background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center;
+            z-index: 10; color: white; cursor: pointer;
         }
-        #start-btn { 
-            padding: 20px 40px; font-size: 20px; border: 2px solid white; 
-            background: none; color: white; cursor: pointer; transition: 0.3s;
-        }
-        #start-btn:hover { background: white; color: black; }
+        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <button id="start-btn" onclick="startTour()">世界へ旅に出る（音あり）</button>
+    <div id="overlay" onclick="startTour()">
+        <button id="start-btn">世界へ旅に出る（音あり）</button>
     </div>
 
     <div id="player-container">
-        <div id="black-screen"></div>
+        <!-- 動画の上のガード -->
         <div id="guard"></div>
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    // 確実にライブ配信が続いているIDに更新（一部変更しました）
+    // ライブカメラIDリスト
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'h_m-m4vW9Xk', 'v6Nf0Wf8S_0']; 
     let currentIndex = 0;
     let player;
-    let isStarted = false;
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
@@ -58,67 +48,38 @@
             videoId: videoList[currentIndex],
             playerVars: { 
                 'autoplay': 0,
-                'controls': 0,
-                'disablekb': 1,
-                'rel': 0,
-                'modestbranding': 1,
-                'iv_load_policy': 3,
-                'mute': 1 // ★重要: 最初はミュート状態で初期化（再生されやすくなる）
+                'controls': 0,    // コントロール非表示
+                'disablekb': 1,  // キーボード操作無効
+                'rel': 0,         // 関連動画非表示
+                'iv_load_policy': 3, // アノテーション非表示
+                'modestbranding': 1  // YouTubeロゴを最小限に
             },
             events: {
-                'onReady': onPlayerReady,
                 'onStateChange': onPlayerStateChange
             }
         });
     }
 
-    function onPlayerReady(event) {
-        console.log("Player Ready");
-    }
-
+    // もし何らかの理由で停止されたら強制再生する
     function onPlayerStateChange(event) {
-        const blackScreen = document.getElementById('black-screen');
-
-        // 再生が始まったら黒画面を隠す
-        if (event.data === YT.PlayerState.PLAYING) {
-            blackScreen.style.display = 'none';
-        } 
-        
-        // 停止されたら強制再生（ユーザーが開始した後に限る）
-        if (isStarted && (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED)) {
+        if (event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
         }
     }
 
     function startTour() {
-        isStarted = true;
         document.getElementById('overlay').style.display = 'none';
-        
-        // ユーザーのクリック直後にミュート解除と再生を行う
         player.unMute();
         player.setVolume(50);
         player.playVideo();
 
-        // 1分ごとに切り替え
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
-        // 切り替え前に黒画面を出す
-        document.getElementById('black-screen').style.display = 'flex';
-        
         currentIndex = (currentIndex + 1) % videoList.length;
-        
-        // loadVideoById は自動再生を試みる
-        player.loadVideoById({
-            videoId: videoList[currentIndex]
-        });
-        
-        // 念のため少し遅らせてミュート解除と再生命令を出す（ブラウザ対策）
-        setTimeout(() => {
-            player.unMute();
-            player.playVideo();
-        }, 500);
+        player.loadVideoById(videoList[currentIndex]);
+        player.unMute();
     }
 </script>
 </body>
