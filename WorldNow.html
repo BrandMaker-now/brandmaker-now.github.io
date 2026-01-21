@@ -21,14 +21,26 @@
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; display: flex; justify-content: center; align-items: center;
-            z-index: 10; color: white; cursor: pointer;
+            z-index: 10; color: white;
         }
-        #start-btn { padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white; cursor: pointer; }
+        
+        #start-btn { 
+            padding: 20px 40px; font-size: 20px; border: 2px solid white; background: none; color: white;
+            cursor: wait; /* 初期カーソルを待機中に変更 */
+            opacity: 0.5; /* 初期ボタンを薄くして無効に見せる */
+        }
+        
+        /* ボタンが有効になったときのスタイル */
+        #start-btn.enabled {
+            cursor: pointer;
+            opacity: 1.0;
+        }
     </style>
 </head>
 <body>
 
-    <div id="overlay" onclick="startTour()">
+    <div id="overlay">
+        <!-- onclick属性を削除し、JavaScriptでイベントリスナーを追加する -->
         <button id="start-btn">世界へ旅に出る（音あり）</button>
     </div>
 
@@ -38,12 +50,25 @@
         <div id="player"></div>
     </div>
 
-<script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://www.youtube.com"></script>
 <script>
     const videoList = ['DhB2NS6i4uA', 'OuCbntsMsWY', 'h_m-m4vW9Xk', 'v6Nf0Wf8S_0']; 
     let currentIndex = 0;
     let player;
     let isTourStarted = false;
+    let isButtonEnabled = false; // ★追加：ボタンの有効・無効を管理するフラグ
+
+    // ★追加：DOMContentLoadedでボタンの有効化とイベントリスナーを設定
+    document.addEventListener('DOMContentLoaded', () => {
+        const startBtn = document.getElementById('start-btn');
+        
+        // 3秒後にボタンを有効にする
+        setTimeout(() => {
+            isButtonEnabled = true;
+            startBtn.classList.add('enabled'); // enabledクラスを追加してスタイル変更
+            startBtn.addEventListener('click', startTour); // クリックイベントリスナーをここで追加
+        }, 3000);
+    });
 
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
@@ -51,13 +76,8 @@
             width: '100%',
             videoId: videoList[currentIndex],
             playerVars: { 
-                'autoplay': 0,
-                'controls': 0,
-                'disablekb': 1,
-                'rel': 0,
-                'iv_load_policy': 3,
-                'modestbranding': 1,
-                'mute': 1 // 最初はミュートで読み込む（再生エラー防止）
+                'autoplay': 0, 'controls': 0, 'disablekb': 1, 'rel': 0, 
+                'iv_load_policy': 3, 'modestbranding': 1, 'mute': 1 
             },
             events: {
                 'onStateChange': onPlayerStateChange
@@ -66,38 +86,33 @@
     }
 
     function onPlayerStateChange(event) {
-        // 再生が始まったら音を出して、カーテンを開ける準備をする
         if (event.data === YT.PlayerState.PLAYING) {
             player.unMute();
             player.setVolume(50);
-            
-            // 5秒後にカーテンを消す（タイトルが消えるのを待つ）
             setTimeout(() => {
                 document.getElementById('curtain').style.display = 'none';
             }, 5000);
         }
-
-        // 強制停止防止
         if (isTourStarted && event.data === YT.PlayerState.PAUSED) {
             player.playVideo();
         }
     }
 
     function startTour() {
+        // isButtonEnabledがtrueでない場合は実行しない（安全装置）
+        if (!isButtonEnabled) return; 
+
         isTourStarted = true;
         document.getElementById('overlay').style.display = 'none';
         document.getElementById('curtain').style.display = 'block';
         
-        player.playVideo(); // 再生開始（onStateChangeでアンミュートされる）
+        player.playVideo();
         setInterval(nextDestination, 60000); 
     }
 
     function nextDestination() {
         document.getElementById('curtain').style.display = 'block';
-        
         currentIndex = (currentIndex + 1) % videoList.length;
-        
-        // 再生を確実にするため、一旦ミュートでロードする
         player.mute();
         player.loadVideoById(videoList[currentIndex]);
         player.playVideo();
