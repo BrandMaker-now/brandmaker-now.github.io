@@ -13,12 +13,17 @@ jobs:
 
       - name: Fetch RSS and Extract Data
         run: |
-          curl -sL "https://news.yahoo.co.jp/rss/topics/top-picks.xml" > raw_rss.xml
-          # <item>以降を抽出し、タイトルとリンクのみを取得して整形
+          curl -sL "https://news.yahoo.co.jp" > raw_rss.xml
+          
+          # 日本時間に設定して1行目に時刻を書き込む
+          export TZ="Asia/Tokyo"
+          echo "最終更新: $(date +'%Y/%m/%d %H:%M')" > news.txt
+          
+          # ニュースデータを追記 (>> を使用)
           sed -n '/<item>/,$p' raw_rss.xml | \
           grep -E "<title>|<link>" | \
           sed -e 's/<[^>]*>//g' -e 's/^[[:space:]]*//;s/[[:space:]]*$//' | \
-          grep -v "^$" > news.txt
+          grep -v "^$" >> news.txt
 
       - name: Commit and Push
         run: |
@@ -26,7 +31,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add news.txt
           if ! git diff --staged --quiet; then
-            git commit -m "Update news $(date +'%Y-%m-%d')"
+            git commit -m "Update news $(date +'%Y-%m-%d %H:%M')"
             git push
           fi
 
