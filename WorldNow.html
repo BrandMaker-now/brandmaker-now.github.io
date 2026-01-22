@@ -8,58 +8,15 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: 'Helvetica Neue', Arial, sans-serif; }
         #player-container { position: relative; width: 100%; height: 100%; }
-        #player-wrapper { width: 100%; height: 100%; }
+        #player-wrapper { width: 100%; height: 100%; pointer-events: none; }
         
-        /* 目的地情報：ニュース速報風のデザイン（背景透明） */
-        #info-display { 
-            position: absolute; 
-            bottom: 40px; 
-            left: 0; 
-            z-index: 15; 
-            display: none;
-            animation: slideIn 0.8s ease-out; 
-            padding-left: 30px; 
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .news-telop {
-            display: flex;
-            flex-direction: column;
-            background: transparent; 
-        }
+        #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: white; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); pointer-events: none; font-weight: bold; display: none; }
+        #info-country { font-size: 32px; margin-bottom: 5px; }
+        #info-time { font-size: 24px; opacity: 0.9; }
         
-        #info-country {
-            font-size: 32px;
-            font-weight: bold;
-            color: black;
-            text-shadow: 
-                -1px -1px 0 #fff,  
-                 1px -1px 0 #fff,
-                -1px  1px 0 #fff,
-                 1px  1px 0 #fff,
-                 0 0 10px rgba(0,0,0,0.5); 
-            padding-bottom: 5px;
-            white-space: nowrap;
-        }
-
-        .white-line {
-            height: 4px;
-            background: white;
-            width: 100%;
-            border-radius: 2px;
-        }
-
-        #info-time { display: none; }
-
-        /* プログレスバー */
         #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.2); z-index: 8; display: none; }
         #progress-bar { height: 100%; width: 100%; background: #FFFFFF; transform-origin: left; transform: scaleX(1); }
         
-        /* 演出画面（カーテン） */
         #curtain { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: #fff; z-index: 10; display: none; flex-direction: column; 
@@ -79,7 +36,6 @@
         
         .separator { margin: 0 20px; font-size: 40px; color: #ccc; font-weight: 200; }
         
-        /* スタートボタン */
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: flex; justify-content: center; align-items: center; z-index: 20; }
         #start-btn { 
             padding: 25px 50px; font-size: 18px; border: 1px solid #ddd; background: #fff; color: #ccc; 
@@ -98,11 +54,8 @@
     </div>
     <div id="player-container">
         <div id="info-display">
-            <div class="news-telop">
-                <div id="info-country"></div>
-                <div class="white-line"></div>
-                <div id="info-time"></div>
-            </div>
+            <div id="info-country"></div>
+            <div id="info-time"></div>
         </div>
         <div id="progress-container">
             <div id="progress-bar"></div>
@@ -128,27 +81,27 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
     const videoList = [
-        { id: 'OuCbntsMsWY', name: '日本 - 千葉 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'CHIBA' },
-        { id: 'rnXIjl_Rzy4', name: 'アメリカ - ニューヨーク - タイムズスクエア', tz: 'America/New_York', cityName: 'NEW YORK' },
-        { id: 'KdXa0xp7jLs', name: 'アメリカ - ニューヨーク - 自由の女神像', tz: 'America/New_York', cityName: 'NEW YORK' },
-        { id: 'R__e74ULCXQ', name: 'アメリカ - ロサンゼルス - ラスベガス', tz: 'America/Los_Angeles', cityName: 'NEVADA' },
-        { id: 'dfVK7ld38Ys', name: '日本 - 東京 - 渋谷スクランブル交差点', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
-        { id: 'gdrNUUf-cQw', name: '南アフリカ - クワズールー・ナタール - テンベ象公園', tz: 'Africa/Johannesburg', cityName: 'SOUTH AFRICA' },
-        { id: '6HYjCFkmDPA', name: '日本 - 沖縄 - 那覇市内', tz: 'Asia/Tokyo', cityName: 'OKINAWA' },
-        { id: 'pJC3BThpdio', name: '日本 - 鹿児島 - 鹿児島空港', tz: 'Asia/Tokyo', cityName: 'KAGOSHIMA' },
-        { id: 'ZdvNQ3D0PY4', name: '日本 - 沖縄 - 那覇空港', tz: 'Asia/Tokyo', cityName: 'OKINAWA' },
-        { id: 'zNahac5x0Tw', name: '日本 - 長崎 - 長崎空港', tz: 'Asia/Tokyo', cityName: 'NAGASAKI' },
-        { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島 - 鹿児島市内', tz: 'Asia/Tokyo', cityName: 'KAGOSHIMA' },
-        { id: '-ToX_1jSCsE', name: '日本 - 山梨 - 富士ヶ嶺ゴルフ場', tz: 'Asia/Tokyo', cityName: 'YAMANASHI' },
-        { id: 'STIN6kB4hCs', name: '日本 - 大阪 - 大阪空港', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
-        { id: '1IB96p46tjE', name: '日本 - 大阪 - 道頓堀', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
-        { id: '8ir0mYl8Fpo', name: '日本 - 奈良 - 金剛山', tz: 'Asia/Tokyo', cityName: 'NARA' },
-        { id: 'GLQhbRGv5qU', name: '日本 - 東京 - 新宿', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
-        { id: 'gzb4qKHKGq8', name: '日本 - 東京 - 東京駅', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
-        { id: 'tUcK5gVHMdo', name: '日本 - 大阪 - 大阪国際空港 伊丹', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
-        { id: 'rGtE0C62fss', name: '日本 - 熊本 - 熊本空港', tz: 'Asia/Tokyo', cityName: 'KUMAMOTO' },
-        { id: 'h63Xam3xLcc', name: '日本 - 北海道 - 岩見沢市', tz: 'Asia/Tokyo', cityName: 'HOKKAIDO' },
-        { id: '8RyR0J8zbbU', name: '日本 - 福岡 - JR博多駅', tz: 'Asia/Tokyo', cityName: 'FUKUOKA' }
+        { id: 'OuCbntsMsWY', name: '日本 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'CHIBA' },
+        { id: 'rnXIjl_Rzy4', name: 'アメリカ - タイムズスクエア', tz: 'America/New_York', cityName: 'NEW YORK' },
+        { id: 'KdXa0xp7jLs', name: 'アメリカ - 自由の女神像', tz: 'America/New_York', cityName: 'NEW YORK' },
+        { id: 'R__e74ULCXQ', name: 'アメリカ - ラスベガス', tz: 'America/Los_Angeles', cityName: 'NEVADA' },
+        { id: 'dfVK7ld38Ys', name: '日本 - 渋谷', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
+        { id: 'gdrNUUf-cQw', name: '南アフリカ - 象公園', tz: 'Africa/Johannesburg', cityName: 'SOUTH AFRICA' },
+        { id: '6HYjCFkmDPA', name: '日本 - 沖縄', tz: 'Asia/Tokyo', cityName: 'OKINAWA' },
+        { id: 'pJC3BThpdio', name: '日本 - 鹿児島空港', tz: 'Asia/Tokyo', cityName: 'KAGOSHIMA' },
+        { id: 'ZdvNQ3D0PY4', name: '日本 - 那覇空港', tz: 'Asia/Tokyo', cityName: 'OKINAWA' },
+        { id: 'zNahac5x0Tw', name: '日本 - 長崎空港', tz: 'Asia/Tokyo', cityName: 'NAGASAKI' },
+        { id: 'GXg2lP8tZOY', name: '日本 - 鹿児島市内', tz: 'Asia/Tokyo', cityName: 'KAGOSHIMA' },
+        { id: '-ToX_1jSCsE', name: '日本 - 山梨', tz: 'Asia/Tokyo', cityName: 'YAMANASHI' },
+        { id: 'STIN6kB4hCs', name: '日本 - 伊丹空港', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
+        { id: '1IB96p46tjE', name: '日本 - 道頓堀', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
+        { id: '8ir0mYl8Fpo', name: '日本 - 金剛山', tz: 'Asia/Tokyo', cityName: 'NARA' },
+        { id: 'GLQhbRGv5qU', name: '日本 - 新宿', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
+        { id: 'gzb4qKHKGq8', name: '日本 - 東京駅', tz: 'Asia/Tokyo', cityName: 'TOKYO' },
+        { id: 'tUcK5gVHMdo', name: '日本 - 伊丹空港', tz: 'Asia/Tokyo', cityName: 'OSAKA' },
+        { id: 'rGtE0C62fss', name: '日本 - 熊本空港', tz: 'Asia/Tokyo', cityName: 'KUMAMOTO' },
+        { id: 'h63Xam3xLcc', name: '日本 - 北海道岩見沢市', tz: 'Asia/Tokyo', cityName: 'HOKKAIDO' },
+        { id: '8RyR0J8zbbU', name: '日本 - 博多駅', tz: 'Asia/Tokyo', cityName: 'FUKUOKA' }
     ];
 
     const tokyoDefault = { id: '', name: '日本 - 東京', tz: 'Asia/Tokyo', cityName: 'TOKYO' };
@@ -158,7 +111,6 @@
     const STAY_DURATION = 45000; 
     const HIDE_DELAY = 3000; 
 
-    // ボタンの有効化処理
     window.addEventListener('load', () => {
         const btn = document.getElementById('start-btn');
         setTimeout(() => {
@@ -170,11 +122,13 @@
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
         departureCity = tokyoDefault;
+        // 初回の目的地も、TOKYO以外から選ぶ
         nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
     
+    // 引数をIDではなくcityNameに変更し、同名の地域を避けるように修正
     function getRandomVideo(excludeCityName) {
         let filtered = videoList.filter(v => v.cityName !== excludeCityName);
         return filtered[Math.floor(Math.random() * filtered.length)];
@@ -182,11 +136,9 @@
 
     function initPlayer() {
         if (player) {
-            // 既存プレイヤーがあれば動画だけ入れ替える
             player.loadVideoById({ videoId: nextVideo.id });
             player.mute(); 
         } else {
-            // 初回のみプレイヤーを生成
             player = new YT.Player('player', {
                 height: '100%', width: '100%', videoId: nextVideo.id,
                 playerVars: { 
@@ -229,11 +181,13 @@
         document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName; 
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
+        document.getElementById('progress-container').style.display = 'none';
     }
 
     function hideInfoScreen() {
         document.getElementById('curtain').style.display = 'none';
         document.getElementById('info-display').style.display = 'block';
+        document.getElementById('progress-container').style.display = 'block';
     }
 
     function startBar() {
@@ -241,8 +195,7 @@
         clearTimeout(nextDestinationTimer);
         bar.style.transition = 'none';
         bar.style.transform = 'scaleX(1)';
-        document.getElementById('progress-container').style.display = 'block';
-
+        
         requestAnimationFrame(() => {
             setTimeout(() => {
                 bar.style.transition = `transform ${STAY_DURATION}ms linear`;
@@ -255,19 +208,13 @@
     function nextDestination() {
         clearTimeout(nextDestinationTimer);
         departureCity = currentVideo || tokyoDefault;
+        // 「今いる場所と同じ地域名」を避けて次の動画を選ぶ
         nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
     }
 
     function updateInfoText() {
-        if(currentVideo) {
-            // ここで name フィールド（長いテキスト）を表示
-            document.getElementById('info-country').innerText = currentVideo.name; 
-            const el = document.getElementById('info-display');
-            el.style.display = 'none';
-            el.offsetHeight;
-            el.style.display = 'block';
-        }
+        if(currentVideo) document.getElementById('info-country').innerText = currentVideo.name;
     }
 
     function updateTimeOnly() {
@@ -276,6 +223,9 @@
         const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
         
         try {
+            if (currentVideo) {
+                document.getElementById('info-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: currentVideo.tz }).format(now);
+            }
             document.querySelector('#departure-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: departureCity.tz }).format(now);
             document.querySelector('#arrival-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: nextVideo.tz }).format(now);
         } catch (e) {}
