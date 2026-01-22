@@ -13,12 +13,12 @@
         /* 目的地情報：ニュース速報風のデザイン（背景透明） */
         #info-display { 
             position: absolute; 
-            bottom: 40px; /* 画面下部に配置 */
+            bottom: 40px; 
             left: 0; 
             z-index: 15; 
             display: none;
-            animation: slideIn 0.8s ease-out; /* 出現アニメーション */
-            padding-left: 30px; /* 左側に余白 */
+            animation: slideIn 0.8s ease-out; 
+            padding-left: 30px; 
         }
 
         @keyframes slideIn {
@@ -32,7 +32,6 @@
             background: transparent; 
         }
         
-        /* テキスト：黒文字に白い影で視認性を確保 */
         #info-country {
             font-size: 32px;
             font-weight: bold;
@@ -42,12 +41,11 @@
                  1px -1px 0 #fff,
                 -1px  1px 0 #fff,
                  1px  1px 0 #fff,
-                 0 0 10px rgba(0,0,0,0.5); /* 強い影で背景を選ばない */
+                 0 0 10px rgba(0,0,0,0.5); 
             padding-bottom: 5px;
             white-space: nowrap;
         }
 
-        /* 下の白いライン */
         .white-line {
             height: 4px;
             background: white;
@@ -55,7 +53,7 @@
             border-radius: 2px;
         }
 
-        #info-time { display: none; } /* 時刻は非表示に */
+        #info-time { display: none; }
 
         /* プログレスバー */
         #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(255, 255, 255, 0.2); z-index: 8; display: none; }
@@ -99,7 +97,6 @@
         <button id="start-btn">Preparing...</button>
     </div>
     <div id="player-container">
-        <!-- 左下にテロップを配置する構造 -->
         <div id="info-display">
             <div class="news-telop">
                 <div id="info-country"></div>
@@ -184,21 +181,22 @@
 
     function initPlayer() {
         if (player) {
-            player.loadVideoById({ videoId: nextVideo.id });
-            player.mute(); 
-        } else {
-            player = new YT.Player('player', {
-                height: '100%', width: '100%', videoId: nextVideo.id,
-                playerVars: { 
-                    'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 
-                    'modestbranding': 1, 'mute': 1, 'playsinline': 1 
-                },
-                events: { 
-                    'onReady': (e) => e.target.playVideo(),
-                    'onStateChange': onPlayerStateChange 
-                }
-            });
+            // プレイヤーが存在する場合は一度破棄し、確実に再生成する
+            player.destroy();
         }
+        document.getElementById('player-wrapper').innerHTML = '<div id="player"></div>';
+        
+        player = new YT.Player('player', {
+            height: '100%', width: '100%', videoId: nextVideo.id,
+            playerVars: { 
+                'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 
+                'modestbranding': 1, 'mute': 1, 'playsinline': 1 
+            },
+            events: { 
+                'onReady': (e) => e.target.playVideo(),
+                'onStateChange': onPlayerStateChange 
+            }
+        });
         showInfoScreen();
     }
 
@@ -229,7 +227,6 @@
         document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName; 
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
-        document.getElementById('progress-container').style.display = 'none';
     }
 
     function hideInfoScreen() {
@@ -263,7 +260,6 @@
     function updateInfoText() {
         if(currentVideo) {
             document.getElementById('info-country').innerText = currentVideo.cityName;
-            // アニメーションを再発火させるための処理
             const el = document.getElementById('info-display');
             el.style.display = 'none';
             el.offsetHeight;
@@ -277,7 +273,6 @@
         const opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
         
         try {
-            // 時刻表示は非表示にしたので、案内画面の時刻だけ更新
             document.querySelector('#departure-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: departureCity.tz }).format(now);
             document.querySelector('#arrival-info .city-time').innerText = new Intl.DateTimeFormat('ja-JP', { ...opts, timeZone: nextVideo.tz }).format(now);
         } catch (e) {}
