@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" href="data:,">
-    <title>World Now</title>
+    <title>World Now - Final Final Edition</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #fff; overflow: hidden; font-family: sans-serif; color: #000; }
         #player-container { position: relative; width: 100%; height: 100%; }
         #player-wrapper { width: 100%; height: 100%; pointer-events: none; }
         
-        /* 目的地情報（本編用） */
-        #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: white; text-shadow: 2px 2px 8px rgba(0,0,0,1); pointer-events: none; font-weight: bold; display: none; }
+        /* 目的地情報（本編用）：テキスト色を黒に変更 */
+        #info-display { position: absolute; bottom: 40px; left: 40px; z-index: 7; color: black; text-shadow: 2px 2px 8px rgba(255,255,255,0.7); pointer-events: none; font-weight: bold; display: none; }
         #info-country { font-size: 32px; margin-bottom: 5px; }
         #info-time { font-size: 24px; opacity: 0.9; }
         
-        /* プログレスバー（左から右へ消える、黒色） */
+        /* プログレスバー（左から右へ消える、白色） */
         #progress-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 8px; background: rgba(0, 0, 0, 0.1); z-index: 8; display: none; }
-        #progress-bar { height: 100%; width: 100%; background: #000000; transform-origin: right; transform: scaleX(1); }
+        #progress-bar { height: 100%; width: 100%; background: #FFFFFF; transform-origin: right; transform: scaleX(1); }
         
         /* 広告・読込中の演出画面（フライトインフォメーション風） */
         #curtain { 
@@ -94,57 +94,54 @@
     let player, currentVideo = null, nextVideo = null;
     let nextDestinationTimer = null;
     const STAY_DURATION = 60000; 
-    // タイトルが見切れる問題の対策：待機時間を少し伸ばす
     const HIDE_DELAY = 3500; 
 
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
-        // 初回は TOKYO（渋谷）からスタートする
         currentVideo = videoList.find(v => v.id === 'dfVK7ld38Ys'); 
-        // 次の動画をランダムに抽選しておく
-        let selectedVideo;
-        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (currentVideo.id === selectedVideo.id);
-        nextVideo = selectedVideo;
-
+        nextVideo = getRandomVideo(currentVideo.id);
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
+    
+    function getRandomVideo(excludeId) {
+        let selectedVideo;
+        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (selectedVideo.id === excludeId);
+        return selectedVideo;
+    }
 
     function initPlayer() {
         if (player) { player.destroy(); }
         document.getElementById('player-wrapper').innerHTML = '<div id="player"></div>';
         
-        // currentVideo はすでにセットされている
-        // nextVideo もすでにセットされている（nextDestination時に更新される）
-
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: currentVideo.id,
-            playerVars: { 'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1 },
+            playerVars: { 
+                'autoplay': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'iv_load_policy': 3, 'modestbranding': 1,
+                'mute': 1 
+            },
             events: { 
                 'onReady': (e) => e.target.playVideo(),
                 'onStateChange': onPlayerStateChange 
             }
         });
-        showInfoScreen(); // 読み込み開始時にインフォ画面を表示
+        showInfoScreen(); 
     }
 
     function onPlayerStateChange(event) {
         const adState = (player.getAdState && player.getAdState() === 1);
 
         if (adState) {
-            // 広告中
             showInfoScreen();
-            player.mute(); // 音を消す
+            player.mute(); 
             resetBar(); 
             return;
         }
 
         if (event.data === YT.PlayerState.PLAYING) {
-            // 本編開始
             player.unMute();
             player.setVolume(50);
             
-            // 待機時間を伸ばして、タイトルがきれいに消えてから本編へ
             setTimeout(() => {
                 if ((player.getAdState && player.getAdState() === 1)) return;
                 hideInfoScreen();
@@ -154,15 +151,12 @@
         }
         
         if (event.data === YT.PlayerState.BUFFERING) {
-            // バッファリング中も音を消して情報画面表示
             showInfoScreen();
             player.mute(); 
         }
     }
 
-    // 広告中/移動中に表示する画面
     function showInfoScreen() {
-        // 出発地と到着地を設定
         document.querySelector('#departure-info .city-name').innerText = currentVideo.cityName || 'Departure';
         document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName || 'Arrival'; 
         
@@ -194,11 +188,7 @@
 
     function nextDestination() {
         clearTimeout(nextDestinationTimer);
-        // 次の動画へ移動する前に、次の nextVideo を決めておく
-        let selectedVideo;
-        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (nextVideo.id === selectedVideo.id);
-        nextVideo = selectedVideo;
-        
+        nextVideo = getRandomVideo(nextVideo.id);
         initPlayer();
     }
 
