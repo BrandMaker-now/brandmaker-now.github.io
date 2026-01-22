@@ -122,13 +122,15 @@
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
         departureCity = tokyoDefault;
-        nextVideo = videoList[Math.floor(Math.random() * videoList.length)];
+        // 初回の目的地も、TOKYO以外から選ぶ
+        nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
     
-    function getRandomVideo(excludeId) {
-        let filtered = videoList.filter(v => v.id !== excludeId);
+    // 引数をIDではなくcityNameに変更し、同名の地域を避けるように修正
+    function getRandomVideo(excludeCityName) {
+        let filtered = videoList.filter(v => v.cityName !== excludeCityName);
         return filtered[Math.floor(Math.random() * filtered.length)];
     }
 
@@ -206,7 +208,8 @@
     function nextDestination() {
         clearTimeout(nextDestinationTimer);
         departureCity = currentVideo || tokyoDefault;
-        nextVideo = getRandomVideo(departureCity.id);
+        // 「今いる場所と同じ地域名」を避けて次の動画を選ぶ
+        nextVideo = getRandomVideo(departureCity.cityName);
         initPlayer();
     }
 
