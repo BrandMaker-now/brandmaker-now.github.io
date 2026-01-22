@@ -7,7 +7,6 @@
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #fff; overflow: hidden; font-family: sans-serif; color: #000; }
         #player-container { position: relative; width: 100%; height: 100%; }
-        /* プレイヤー領域のクリックを無効化 */
         #player-wrapper { width: 100%; height: 100%; pointer-events: none; }
         
         /* 目的地情報（本編用） */
@@ -95,10 +94,18 @@
     let player, currentVideo = null, nextVideo = null;
     let nextDestinationTimer = null;
     const STAY_DURATION = 60000; 
+    // タイトルが見切れる問題の対策：待機時間を少し伸ばす
+    const HIDE_DELAY = 3500; 
 
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
-        nextVideo = videoList[Math.floor(Math.random() * videoList.length)];
+        // 初回は TOKYO（渋谷）からスタートする
+        currentVideo = videoList.find(v => v.id === 'dfVK7ld38Ys'); 
+        // 次の動画をランダムに抽選しておく
+        let selectedVideo;
+        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (currentVideo.id === selectedVideo.id);
+        nextVideo = selectedVideo;
+
         initPlayer();
         setInterval(updateTimeOnly, 1000);
     });
@@ -107,10 +114,8 @@
         if (player) { player.destroy(); }
         document.getElementById('player-wrapper').innerHTML = '<div id="player"></div>';
         
-        currentVideo = nextVideo;
-        let selectedVideo;
-        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (currentVideo.id === selectedVideo.id);
-        nextVideo = selectedVideo; 
+        // currentVideo はすでにセットされている
+        // nextVideo もすでにセットされている（nextDestination時に更新される）
 
         player = new YT.Player('player', {
             height: '100%', width: '100%', videoId: currentVideo.id,
@@ -120,40 +125,46 @@
                 'onStateChange': onPlayerStateChange 
             }
         });
-        showInfoScreen(); 
+        showInfoScreen(); // 読み込み開始時にインフォ画面を表示
     }
 
     function onPlayerStateChange(event) {
         const adState = (player.getAdState && player.getAdState() === 1);
 
         if (adState) {
+            // 広告中
             showInfoScreen();
-            player.mute();
+            player.mute(); // 音を消す
             resetBar(); 
             return;
         }
 
         if (event.data === YT.PlayerState.PLAYING) {
+            // 本編開始
             player.unMute();
             player.setVolume(50);
             
+            // 待機時間を伸ばして、タイトルがきれいに消えてから本編へ
             setTimeout(() => {
                 if ((player.getAdState && player.getAdState() === 1)) return;
                 hideInfoScreen();
                 updateInfoText();
                 startBar(); 
-            }, 2000);
+            }, HIDE_DELAY);
         }
         
         if (event.data === YT.PlayerState.BUFFERING) {
+            // バッファリング中も音を消して情報画面表示
             showInfoScreen();
             player.mute(); 
         }
     }
 
+    // 広告中/移動中に表示する画面
     function showInfoScreen() {
+        // 出発地と到着地を設定
         document.querySelector('#departure-info .city-name').innerText = currentVideo.cityName || 'Departure';
-        document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName || 'Arrival'; /* ここを修正 */
+        document.querySelector('#arrival-info .city-name').innerText = nextVideo.cityName || 'Arrival'; 
         
         document.getElementById('curtain').style.display = 'flex';
         document.getElementById('info-display').style.display = 'none';
@@ -176,9 +187,19 @@
             setTimeout(() => {
                 bar.style.transition = `transform ${STAY_DURATION}ms linear`;
                 bar.style.transform = 'scaleX(0)';
-                nextDestinationTimer = setTimeout(initPlayer, STAY_DURATION);
+                nextDestinationTimer = setTimeout(nextDestination, STAY_DURATION);
             }, 50);
         });
+    }
+
+    function nextDestination() {
+        clearTimeout(nextDestinationTimer);
+        // 次の動画へ移動する前に、次の nextVideo を決めておく
+        let selectedVideo;
+        do { selectedVideo = videoList[Math.floor(Math.random() * videoList.length)]; } while (nextVideo.id === selectedVideo.id);
+        nextVideo = selectedVideo;
+        
+        initPlayer();
     }
 
     function resetBar() {
