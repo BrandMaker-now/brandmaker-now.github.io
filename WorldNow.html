@@ -86,7 +86,7 @@
         const startTime = Date.now();
         
         try {
-            const response = await fetch('locations.json');
+            const response = await fetch('locations.txt');
             videoList = await response.json();
             
             const elapsed = Date.now() - startTime;
@@ -98,7 +98,7 @@
             }, waitTime);
             
         } catch (e) {
-            btn.innerText = "Error: locations.json not found";
+            btn.innerText = "Error: locations.txt not found";
             console.error(e);
         }
     });
