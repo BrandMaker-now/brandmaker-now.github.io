@@ -44,15 +44,16 @@
             padding: 25px 50px; font-size: 18px; border: 1px solid #ddd; background: #fff; color: #ccc; 
             cursor: default; border-radius: 50px; transition: 0.5s; pointer-events: none;
         }
-        #start-btn.ready { color: #333; cursor: pointer; pointer-events: auto; border-color: #333; }
+        /* 準備ができたら（またはエラーが起きたら）このクラスを強制適用します */
+        #start-btn.ready { color: #333; cursor: pointer; pointer-events: auto; border-color: #333; opacity: 1 !important; }
+        #start-btn.ready:hover { background: #000; color: #fff; }
     </style>
 </head>
 <body oncontextmenu="return false;">
     <div id="overlay">
-        <button id="start-btn">System Checking...</button>
+        <button id="start-btn">Connecting to 2026...</button>
     </div>
     <div id="player-container">
-        <!-- 既存のHTML構造は維持 -->
         <div id="info-display"><div id="info-country"></div><div id="info-time"></div></div>
         <div id="progress-container"><div id="progress-bar"></div></div>
         <div id="curtain">
@@ -73,12 +74,12 @@
         <div id="player-wrapper"><div id="player"></div></div>
     </div>
 
-<script src="https://www.youtube.com"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    // 予備データ（エラー時に使用）
+    // 予備データ
     const backupList = [
-        { id: 'OuCbntsMsWY', name: '日本 - 成田国際空港', tz: 'Asia/Tokyo', cityName: 'CHIBA' },
-        { id: 'rnXIjl_Rzy4', name: 'USA - タイムズスクエア', tz: 'America/New_York', cityName: 'NEW YORK' },
+        { id: 'OuCbntsMsWY', name: '日本 - 成田', tz: 'Asia/Tokyo', cityName: 'CHIBA' },
+        { id: 'rnXIjl_Rzy4', name: 'USA - ニューヨーク', tz: 'America/New_York', cityName: 'NEW YORK' },
         { id: 'dfVK7ld38Ys', name: '日本 - 渋谷', tz: 'Asia/Tokyo', cityName: 'TOKYO' }
     ];
 
@@ -91,35 +92,36 @@
     window.addEventListener('load', async () => {
         const btn = document.getElementById('start-btn');
         const startTime = Date.now();
-        let connectionStatus = "Online";
+        let errorOccurred = false;
         
         try {
             const response = await fetch('locations.txt');
             if (response.ok) {
                 const textData = await response.text();
                 videoList = JSON.parse(textData);
-                connectionStatus = "Online";
             } else {
-                throw new Error();
+                throw new Error("File Missing");
             }
         } catch (e) {
             videoList = backupList;
-            connectionStatus = "Offline Mode"; // エラーが起きたことがわかる
+            errorOccurred = true; // エラーフラグを立てる
         } finally {
             const elapsed = Date.now() - startTime;
             const waitTime = Math.max(0, 3000 - elapsed);
+            
             setTimeout(() => {
-                btn.innerText = `Go to the World (${connectionStatus})`;
+                // エラーでもそうでなくても、必ずボタンを ready にして押せるようにする
+                btn.innerText = errorOccurred ? "Go to the World (Offline Data)" : "Go to the World (2026)";
                 btn.classList.add('ready');
             }, waitTime);
         }
     });
 
-    // --- 以下、既存のロジックを維持 ---
     document.getElementById('start-btn').addEventListener('click', () => {
         document.getElementById('overlay').style.display = 'none';
         const curtain = document.getElementById('curtain');
         curtain.classList.add('no-fade'); 
+        
         nextVideo = videoList[Math.floor(Math.random() * videoList.length)];
         initPlayer();
         setInterval(updateTimeOnly, 1000);
