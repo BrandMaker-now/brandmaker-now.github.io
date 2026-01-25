@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>座標特定ツール</title>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #video-container { width: 100%; height: 100%; position: relative; }
+        iframe { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <!-- 座標を取得したい動画の埋め込みコードをここに貼り付ける -->
+        <!-- start=55秒から始まる動画URL -->
+        <iframe src="https://www.youtube.com" frameborder="0" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        const videoContainer = document.getElementById('video-container');
+
+        // クリックした場所の座標を計算してコンソールに表示する
+        videoContainer.addEventListener('click', function(event) {
+            const rect = videoContainer.getBoundingClientRect();
+            
+            // クリック位置を % に変換
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+            
+            // F12のコンソールタブに結果を表示
+            console.log(`桜島/建物の位置 top: ${y.toFixed(2)}%, left: ${x.toFixed(2)}%`);
+            alert(`座標をコンソールに出力しました。\ntop: ${y.toFixed(2)}%, left: ${x.toFixed(2)}%`);
+        });
+
+        // ページ読み込み時に使い方をアラート
+        window.onload = () => {
+            alert("動画上の建物をクリックしてください。\n座標(top/left %)がF12キーで開く『Console』タブに表示されます。");
+        };
+    </script>
+</body>
+</html>
