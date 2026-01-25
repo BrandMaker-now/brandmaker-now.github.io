@@ -5,12 +5,27 @@
     <title>アミュラン空中散歩体験 🎡</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        #video-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* 動画エリア：クリック（停止）を無効化 */
+        #video-wrapper { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+            pointer-events: none; /* ← これで動画をクリックしても停止しなくなります */
+        }
+
+        /* 最初のタイトルや広告を隠すための黒い幕 */
+        #video-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 5;
+            display: flex; align-items: center; justify-content: center;
+            color: white; transition: opacity 2s ease; /* 2秒かけてフワッと消える */
+        }
+
         #info-tooltip {
             position: absolute; top: 20px; right: 20px; z-index: 10;
             background: rgba(0, 0, 0, 0.7); color: white; padding: 15px; border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.3); min-width: 200px;
         }
+
         .back-button {
             position: absolute; top: 20px; left: 20px; z-index: 10;
             color: white; text-decoration: none; background: rgba(0,0,0,0.5);
@@ -20,56 +35,73 @@
 </head>
 <body>
 
+    <!-- 最初の数秒間、これで見えなくします -->
+    <div id="video-overlay">
+        <div id="loading-text">🎡 まもなく出発します...</div>
+    </div>
+
     <div id="video-wrapper">
-        <!-- ID="player" を指定して、下のプログラムから制御します -->
         <div id="player"></div>
     </div>
 
     <div id="info-tooltip">
         <div style="font-size: 12px; opacity: 0.8;">現在の状況</div>
-        <div id="status-text">読み込み中...</div>
+        <div id="status-text">準備中...</div>
         <div id="altitude-text" style="margin-top: 5px; font-weight: bold;">標高: --- m</div>
     </div>
 
     <a href="../index.html" class="back-button">← ホームに戻る</a>
 
-    <!-- YouTube API の読み込み -->
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
         let player;
-        // YouTube APIの準備ができたら呼ばれる
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 height: '100%',
                 width: '100%',
                 videoId: 'uX8g9pbRnIA',
                 playerVars: {
-                    'start': 55,       // 55秒から開始
-                    'controls': 0,     // 操作バーを隠す
-                    'autoplay': 1,     // 自動再生
-                    'mute': 1,         // ミュート（自動再生に必須）
-                    'rel': 0
+                    'start': 55,
+                    'controls': 0,      // 操作バーを消す
+                    'disablekb': 1,    // キーボード操作を禁止
+                    'modestbranding': 1, // ロゴを減らす
+                    'rel': 0,
+                    'autoplay': 1,
+                    'mute': 1
                 },
                 events: {
-                    'onReady': onPlayerReady
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
                 }
             });
         }
 
         function onPlayerReady(event) {
-            // 1秒ごとに今の再生時間を確認してガイドを更新する
+            event.target.playVideo();
+            // 1秒ごとにガイド更新
             setInterval(updateGuide, 1000);
+        }
+
+        function onPlayerStateChange(event) {
+            // 動画が再生開始（広告が終わるかスキップされたタイミング）を検知
+            if (event.data == YT.PlayerState.PLAYING) {
+                // 3秒待ってから黒い幕を消す（タイトルや最初の広告を見せないため）
+                setTimeout(() => {
+                    const overlay = document.getElementById('video-overlay');
+                    overlay.style.opacity = '0';
+                    setTimeout(() => { overlay.style.display = 'none'; }, 2000);
+                }, 3000);
+            }
         }
 
         function updateGuide() {
             if (!player || !player.getCurrentTime) return;
-            
             const time = player.getCurrentTime();
             const status = document.getElementById('status-text');
             const altitude = document.getElementById('altitude-text');
 
-            // 時間（秒）に合わせて説明と標高（仮）を変える
+            // 55秒スタートなので、経過時間に合わせて調整
             if (time < 120) {
                 status.innerText = "アミュラン上昇中 🎡";
                 altitude.innerText = "標高: 約 20 m";
