@@ -15,14 +15,14 @@
             z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
 
-        /* 2. 出発演出（タイトル隠し） */
+        /* 2. 出発演出（タイトル隠し用） */
         #loading-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 90; display: none; align-items: center; justify-content: center;
-            transition: opacity 2s ease;
+            transition: opacity 2s ease; pointer-events: none;
         }
 
-        /* 3. 建物に吸い付くラベル（アニメーション） */
+        /* 3. 建物に吸い付くラベル */
         #floating-label {
             position: absolute; z-index: 20; display: none; flex-direction: column; align-items: center;
             transition: all 0.8s ease-out; pointer-events: none; transform: translateX(-50%);
@@ -51,7 +51,6 @@
 
     <div id="loading-overlay"><div>🎡 まもなく出発します...</div></div>
 
-    <!-- 動く建物ラベル -->
     <div id="floating-label">
         <div class="label-content"><span id="l-icon">📍</span> <span id="l-name">建物</span></div>
         <div class="label-line"></div>
@@ -59,7 +58,7 @@
 
     <div id="info-tooltip">
         <div style="font-size: 11px; opacity: 0.7;">現在の状況</div>
-        <div id="status-text">準備中...</div>
+        <div id="status-text">出発準備中...</div>
         <div id="altitude-text" style="font-weight: bold; margin-top:5px;">標高: --- m</div>
     </div>
 
@@ -68,6 +67,7 @@
     <div id="video-wrapper"><div id="player"></div></div>
 
     <script>
+        // APIを動的にロード
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         document.body.appendChild(tag);
@@ -78,24 +78,40 @@
         document.getElementById('start-btn').addEventListener('click', () => {
             if (isStarted) return;
             isStarted = true;
-            document.getElementById('menu-screen').style.display = 'none';
-            document.getElementById('loading-overlay').style.display = 'flex';
 
+            // メニューを消し、黒幕を表示
+            document.getElementById('menu-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('menu-screen').style.display = 'none'; }, 1000);
+            
+            const lo = document.getElementById('loading-overlay');
+            lo.style.display = 'flex';
+
+            // プレイヤー作成
             player = new YT.Player('player', {
                 height: '100%', width: '100%', videoId: 'uX8g9pbRnIA',
-                playerVars: { 'start': 55, 'controls': 0, 'disablekb': 1, 'modestbranding': 1, 'rel': 0, 'autoplay': 1, 'mute': 1, 'origin': location.origin },
-                events: { 'onReady': (e) => { e.target.playVideo(); setInterval(updateUI, 1000); }, 'onStateChange': onPlayerStateChange }
+                playerVars: { 
+                    'start': 55, 'controls': 0, 'disablekb': 1, 'modestbranding': 1, 
+                    'rel': 0, 'autoplay': 1, 'mute': 1, 
+                    'origin': window.location.protocol + '//' + window.location.hostname 
+                },
+                events: { 
+                    'onReady': (e) => { 
+                        e.target.playVideo(); 
+                        setInterval(updateUI, 1000);
+                        
+                        // 【ここが重要】再生合図を待たず、準備完了から4秒後に確実に幕を消す
+                        setTimeout(hideOverlay, 4000);
+                    }
+                }
             });
         });
 
-        function onPlayerStateChange(event) {
-            if (event.data == YT.PlayerState.PLAYING) {
-                setTimeout(() => {
-                    const lo = document.getElementById('loading-overlay');
-                    lo.style.opacity = '0';
-                    document.getElementById('info-tooltip').style.display = 'block';
-                    setTimeout(() => lo.style.display = 'none', 2000);
-                }, 3500); // 3.5秒でタイトル隠し解除
+        function hideOverlay() {
+            const lo = document.getElementById('loading-overlay');
+            if (lo && lo.style.display !== 'none') {
+                lo.style.opacity = '0';
+                document.getElementById('info-tooltip').style.display = 'block';
+                setTimeout(() => lo.style.display = 'none', 2000);
             }
         }
 
@@ -107,18 +123,18 @@
             const label = document.getElementById('floating-label');
             const lName = document.getElementById('l-name');
 
-            // --- 右上ツールチップのテキスト更新 ---
+            // ツールチップ更新
             if (time < 140) { status.innerText = "まもなく景色が見えます"; alt.innerText = "標高: 上昇中..."; }
             else if (time < 440) { status.innerText = "街並みが一望できます"; alt.innerText = "標高: 約 60 m"; }
             else if (time < 510) { status.innerText = "最高地点！桜島が正面です"; alt.innerText = "標高: 91 m"; }
             else { status.innerText = "ゆっくり下降しています"; alt.innerText = "標高: 下降中..."; }
 
-            // --- 建物ラベルの移動ロジック ---
-            if (time >= 145 && time < 260) { // 鹿児島中央駅
+            // 建物ラベル移動
+            if (time >= 145 && time < 260) {
                 showLabel(label, lName, "鹿児島中央駅 🚄", "25%", (65 + (time-145)*0.1) + "%");
-            } else if (time >= 430 && time < 510) { // 桜島
+            } else if (time >= 430 && time < 510) {
                 showLabel(label, lName, "桜島 🌋", "50%", "45%");
-            } else if (time >= 620 && time < 750) { // 城山
+            } else if (time >= 620 && time < 750) {
                 showLabel(label, lName, "城山 ⛰️", "75%", (40 + (time-620)*0.05) + "%");
             } else {
                 label.style.display = 'none';
