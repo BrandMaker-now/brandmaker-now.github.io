@@ -23,7 +23,7 @@
   { "id": "kSfYb5fk5pU", "name": "日本 - 鹿児島 - 鹿児島市内", "tz": "Asia/Tokyo", "cityName": "KAGOSHIMA" },
   { "id": "gp7iYmCn-6A", "name": "日本 - 広島 - 広島空港", "tz": "Asia/Tokyo", "cityName": "HIROSHIMA" },
   { "id": "slqbn8CzeXM", "name": "日本 - 大阪 - 道頓堀", "tz": "Asia/Tokyo", "cityName": "OSAKA" },
-  { "id": "OO-pHthvmYw", "name": "日本 - 北海道 - 函館駅", "tz": "Asia/Tokyo", "cityName": "HOKKAIDO" },
+  { "id": "TsysVMb6luc", "name": "日本 - 北海道 - 函館駅", "tz": "Asia/Tokyo", "cityName": "HOKKAIDO" },
   { "id": "NzFNUiTGj2A", "name": "日本 - 兵庫 - 峰山高原リゾート", "tz": "Asia/Tokyo", "cityName": "HYOUGO" },
   { "id": "G2pXkb7DdPE", "name": "日本 - 北海道 - 十勝大橋", "tz": "Asia/Tokyo", "cityName": "HOKKAIDO" },
   { "id": "sGvnwx2pwAo", "name": "日本 - 富山 - 安住町", "tz": "Asia/Tokyo", "cityName": "TOYAMA" },
